@@ -1,0 +1,58 @@
+services:
+  auth:
+    image: chedlyrebai/authentification-server:latest
+    port: 9080
+    replicas: 2
+    database: true
+  config:
+    image: chedlyrebai/config-server:latest
+    port: 9000
+    replicas: 1
+  device:
+    image: chedlyrebai/device-service:latest
+    port: 9005
+    replicas: 2
+    database: true
+  discovery:
+    image: chedlyrebai/discovery-server:latest
+    port: 8761
+    replicas: 1
+    serviceName: discovery-server
+  frontend:
+    image: chedlyrebai/frontend:latest
+    port: 4173
+    replicas: 2
+    public: true
+    healthPath: /
+  gateway:
+    image: chedlyrebai/gateway:latest
+    port: 8222
+    replicas: 2
+    public: true
+  notifications:
+    image: chedlyrebai/notification-server:latest
+    port: 8085
+    replicas: 2
+    database: true
+  query:
+    image: chedlyrebai/query-service:latest
+    port: 9007
+    replicas: 2
+    database: true
+  tenant:
+    image: chedlyrebai/tenant-service:latest
+    port: 9004
+    replicas: 2
+    database: true
+  user:
+    image: chedlyrebai/usermanagement-service:latest
+    port: 9003
+    grpcPort: 9095
+    replicas: 2
+    database: true
+
+imagePullPolicy: IfNotPresent
+configMapName: realtime-monitoring-config
+secretName: realtime-monitoring-secrets
+kafka:
+  image: confluentinc/cp-kafka:7.6.1

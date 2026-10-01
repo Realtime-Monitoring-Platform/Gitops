@@ -1,0 +1,25 @@
+{{- range $name, $service := .Values.services }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $service.serviceName | default (printf "%s-service" $name) | quote }}
+  labels:
+    app.kubernetes.io/part-of: realtime-monitoring
+spec:
+  type: {{ if $service.public }}LoadBalancer{{ else }}ClusterIP{{ end }}
+  selector:
+    app: {{ $name }}
+  ports:
+    - name: http
+      port: {{ $service.port }}
+      targetPort: {{ $service.port }}
+      protocol: TCP
+      
+{{- if $service.grpcPort }}
+    - name: grpc
+      port: {{ $service.grpcPort }}
+      targetPort: {{ $service.grpcPort }}
+      protocol: TCP
+{{- end }}
+---
+{{ end }}

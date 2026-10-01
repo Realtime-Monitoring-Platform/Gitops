@@ -1,0 +1,88 @@
+{{- range $name, $service := .Values.services }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}-service
+  labels:
+    app: {{ $name }}
+    app.kubernetes.io/part-of: realtime-monitoring
+spec:
+  replicas: {{ $service.replicas | default 2 }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+        app.kubernetes.io/part-of: realtime-monitoring
+    spec:
+      containers:
+        - name: {{ $name }}
+          image: {{ $service.image | quote }}
+          imagePullPolicy: {{ $.Values.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $service.port }}
+              protocol: TCP
+{{- if $service.grpcPort }}
+            - name: grpc
+              containerPort: {{ $service.grpcPort }}
+              protocol: TCP
+{{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ $.Values.configMapName }}
+          env:
+            - name: SERVER_PORT
+              value: {{ $service.port | quote }}
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secretName }}
+                  key: SPRING_DATASOURCE_PASSWORD
+{{- if ne $name "config" }}
+            - name: SPRING_CONFIG_IMPORT
+              value: optional:configserver:http://config-service:9000
+{{- end }}
+{{- if $service.database }}
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ $.Values.configMapName }}
+                  key: SPRING_DATASOURCE_URL_{{ upper $name }}
+{{- end }}
+{{- if eq $name "auth" }}
+            - name: GRPC_CLIENT_USER_SERVICE_ADDRESS
+              value: static://user-service:9095
+{{- end }}
+{{- if eq $name "config" }}
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secretName }}
+                  key: GITHUB_TOKEN
+                  optional: true
+{{- end }}
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1000m"
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: {{ $service.healthPath | default "/actuator/health" }}
+              port: {{ $service.port }}
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: {{ $service.healthPath | default "/actuator/health" }}
+              port: {{ $service.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+{{ end }}
