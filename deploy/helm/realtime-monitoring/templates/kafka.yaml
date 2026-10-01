@@ -25,12 +25,14 @@ spec:
             - name: controller
               containerPort: 29093
           env:
+            - name: KAFKA_PORT
+              value: ""
             - name: KAFKA_NODE_ID
               value: "1"
             - name: KAFKA_PROCESS_ROLES
               value: broker,controller
             - name: KAFKA_CONTROLLER_QUORUM_VOTERS
-              value: 1@kafka:29093
+              value: 1@localhost:29093
             - name: KAFKA_LISTENERS
               value: INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093
             - name: KAFKA_ADVERTISED_LISTENERS
@@ -49,8 +51,11 @@ spec:
               value: "1"
             - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
               value: "0"
+            - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+              value: "true"
             - name: CLUSTER_ID
               value: MkU3OEVBNTcwNTJENDM2Qk
+            
               
 ---
 apiVersion: v1
@@ -66,4 +71,8 @@ spec:
     - name: internal
       port: 9092
       targetPort: 9092
+      protocol: TCP
+    - name: controller
+      port: 29093
+      targetPort: 29093
       protocol: TCP

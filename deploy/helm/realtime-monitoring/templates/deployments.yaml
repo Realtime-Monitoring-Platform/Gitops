@@ -36,11 +36,14 @@ spec:
           env:
             - name: SERVER_PORT
               value: {{ $service.port | quote }}
+{{- if $service.database }}
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ $.Values.secretName }}
                   key: SPRING_DATASOURCE_PASSWORD
+{{- end }}
+
 {{- if ne $name "config" }}
             - name: SPRING_CONFIG_IMPORT
               value: optional:configserver:http://config-service:9000

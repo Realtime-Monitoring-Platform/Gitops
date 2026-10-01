@@ -1,0 +1,9 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configMapName }}
+  labels:
+    app.kubernetes.io/part-of: realtime-monitoring
+data:
+{{- toYaml .Values.appConfig | nindent 2 }}

@@ -7,7 +7,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/Realtime-Monitoring-Platform/gitops.git
+    repoURL: https://github.com/Realtime-Monitoring-Platform/Gitops.git
     targetRevision: main
     path: deploy/helm/realtime-monitoring
     helm:

@@ -25,10 +25,11 @@ services:
     public: true
     healthPath: /
   gateway:
-    image: chedlyrebai/gateway:latest
+    image: chedlyrebai/getaway-service:latest
     port: 8222
     replicas: 2
-    public: true
+    public: false
+    serviceName: gateway
   notifications:
     image: chedlyrebai/notification-server:latest
     port: 8085
@@ -51,8 +52,32 @@ services:
     replicas: 2
     database: true
 
-imagePullPolicy: IfNotPresent
+imagePullPolicy: Always
 configMapName: realtime-monitoring-config
 secretName: realtime-monitoring-secrets
+
+appConfig:
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-server:8761/eureka/"
+  SPRING_CLOUD_CONFIG_ENABLED: "true"
+  SPRING_CLOUD_CONFIG_FAIL_FAST: "true"
+  SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS: "240"
+  SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL: "1000"
+  SPRING_CLOUD_CONFIG_RETRY_MULTIPLIER: "1.5"
+  SPRING_CLOUD_CONFIG_RETRY_MAX_INTERVAL: "5000"
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  SPRING_DATASOURCE_USERNAME: "postgres"
+  SPRING_REDIS_DATA_HOST: "redis"
+  SPRING_REDIS_DATA_PORT: "6379"
+  SPRING_DATASOURCE_URL_AUTH: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/jwt?sslmode=require"
+  SPRING_DATASOURCE_URL_DEVICE: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/device_management?sslmode=require"
+  SPRING_DATASOURCE_URL_NOTIFICATIONS: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/notification?sslmode=require"
+  SPRING_DATASOURCE_URL_QUERY: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/read_database?sslmode=require"
+  SPRING_DATASOURCE_URL_TENANT: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/tenant_mang?sslmode=require"
+  SPRING_DATASOURCE_URL_USER: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/postgres?sslmode=require"
+
+redis:
+  enabled: true
+  image: redis:7-alpine
+
 kafka:
   image: confluentinc/cp-kafka:7.6.1
