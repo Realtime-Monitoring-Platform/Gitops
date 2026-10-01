@@ -44,7 +44,11 @@ spec:
                   key: SPRING_DATASOURCE_PASSWORD
 {{- end }}
 
-{{- if ne $name "config" }}
+
+{{- if eq $name "config" }}
+            - name: SPRING_CLOUD_CONFIG_ENABLED
+              value: "false"
+{{- else }}
             - name: SPRING_CONFIG_IMPORT
               value: optional:configserver:http://config-service:9000
 {{- end }}
