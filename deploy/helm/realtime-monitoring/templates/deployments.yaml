@@ -63,6 +63,15 @@ spec:
             - name: SPRING_CONFIG_IMPORT
               value: optional:configserver:http://config-service:9000
 {{- end }}
+
+{{- if or (eq $name "auth") (eq $name "user") }}
+            - name: MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED
+              value: "true"
+            - name: MANAGEMENT_ENDPOINT_HEALTH_GROUP_LIVENESS_INCLUDE
+              value: livenessState
+            - name: MANAGEMENT_ENDPOINT_HEALTH_GROUP_READINESS_INCLUDE
+              value: readinessState,db
+{{- end }}
 {{- if $service.database }}
             - name: SPRING_DATASOURCE_URL
               valueFrom:
@@ -91,13 +100,13 @@ spec:
               memory: 1Gi
           livenessProbe:
             httpGet:
-              path: {{ $service.healthPath | default "/actuator/health" }}
+              path: {{ $service.livenessPath | default ($service.healthPath | default "/actuator/health") }}
               port: {{ $service.port }}
             initialDelaySeconds: 60
             periodSeconds: 15
           readinessProbe:
             httpGet:
-              path: {{ $service.healthPath | default "/actuator/health" }}
+              path: {{ $service.readinessPath | default ($service.healthPath | default "/actuator/health") }}
               port: {{ $service.port }}
             initialDelaySeconds: 30
             periodSeconds: 10

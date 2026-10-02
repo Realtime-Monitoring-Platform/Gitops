@@ -4,6 +4,8 @@ services:
     port: 9080
     replicas: 1
     database: true
+    livenessPath: /actuator/health/liveness
+    readinessPath: /actuator/health/readiness
   config:
     image: chedlyrebai/config-server:latest
     port: 9000
@@ -51,10 +53,13 @@ services:
     grpcPort: 9095
     replicas: 1
     database: true
+    livenessPath: /actuator/health/liveness
+    readinessPath: /actuator/health/readiness
 
 imagePullPolicy: Always
 configMapName: realtime-monitoring-config
 secretName: realtime-monitoring-secrets
+
 
 appConfig:
   EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-server:8761/eureka/"
