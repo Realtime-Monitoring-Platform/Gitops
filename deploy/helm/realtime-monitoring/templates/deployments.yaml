@@ -16,14 +16,16 @@ spec:
       labels:
         app: {{ $name }}
         app.kubernetes.io/part-of: realtime-monitoring
+{{- if or $service.database (eq $name "config") }}
         azure.workload.identity/use: "true"
+{{- end }}
     spec:
       serviceAccountName: realtime-monitoring-sa
       containers:
         - name: {{ $name }}
           image: {{ $service.image | quote }}
           imagePullPolicy: {{ $.Values.imagePullPolicy }}
-{{- if $service.database }}
+{{- if or $service.database (eq $name "config") }}
           volumeMounts:
             - name: secrets-store
               mountPath: "/mnt/secrets"
@@ -53,6 +55,7 @@ spec:
 {{- end }}
 
 
+
 {{- if eq $name "config" }}
             - name: SPRING_CLOUD_CONFIG_ENABLED
               value: "false"
@@ -75,9 +78,8 @@ spec:
             - name: GITHUB_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ $.Values.secretName }}
+                  name: realtime-monitoring-kv-secrets
                   key: GITHUB_TOKEN
-                  optional: true
 {{- end }}
 
           resources:
@@ -99,7 +101,7 @@ spec:
               port: {{ $service.port }}
             initialDelaySeconds: 30
             periodSeconds: 10
-      {{- if $service.database }}
+      {{- if or $service.database (eq $name "config") }}
       volumes:
         - name: secrets-store
           csi:
