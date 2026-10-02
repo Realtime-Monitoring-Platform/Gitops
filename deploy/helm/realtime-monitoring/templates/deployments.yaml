@@ -27,12 +27,18 @@ spec:
         - name: {{ $name }}
           image: {{ $service.image | quote }}
           imagePullPolicy: {{ $.Values.imagePullPolicy }}
-{{- if or $service.database (eq $name "config") }}
+{{- if eq $name "device" }}
+          volumeMounts:
+            - name: device-certs
+              mountPath: "/mnt/secrets"
+              readOnly: true
+{{- else if or $service.database (eq $name "config") }}
           volumeMounts:
             - name: secrets-store
               mountPath: "/mnt/secrets"
               readOnly: true
 {{- end }}
+
           ports:
             - name: http
               containerPort: {{ $service.port }}
@@ -58,13 +64,16 @@ spec:
 
 
 
-
 {{- if eq $name "config" }}
             - name: SPRING_CLOUD_CONFIG_ENABLED
               value: "false"
 {{- else }}
             - name: SPRING_CONFIG_IMPORT
               value: optional:configserver:http://config-service:9000
+{{- end }}
+{{- if eq $name "device" }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: aks
 {{- end }}
 
 {{- if or (eq $name "auth") (eq $name "user") (eq $name "notifications") }}
@@ -113,7 +122,15 @@ spec:
               port: {{ $service.port }}
             initialDelaySeconds: 30
             periodSeconds: 10
-      {{- if or $service.database (eq $name "config") }}
+{{- if eq $name "device" }}
+      volumes:
+        - name: device-certs
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: device-service-keyvault
+{{- else if or $service.database (eq $name "config") }}
       volumes:
         - name: secrets-store
           csi:
