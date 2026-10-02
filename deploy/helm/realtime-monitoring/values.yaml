@@ -74,6 +74,8 @@ appConfig:
   SPRING_CLOUD_CONFIG_RETRY_MAX_INTERVAL: "5000"
   SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
   SPRING_DATASOURCE_USERNAME: "postgres"
+  SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "2"
+  SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "0"
   SPRING_DATA_REDIS_HOST: "redis"
   SPRING_DATA_REDIS_PORT: "6379"
   SPRING_DATASOURCE_URL_AUTH: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/jwt?sslmode=require"
@@ -82,7 +84,6 @@ appConfig:
   SPRING_DATASOURCE_URL_QUERY: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/read_database?sslmode=require"
   SPRING_DATASOURCE_URL_TENANT: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/tenant_mang?sslmode=require"
   SPRING_DATASOURCE_URL_USER: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/postgres?sslmode=require"
-
 
 redis:
   enabled: true

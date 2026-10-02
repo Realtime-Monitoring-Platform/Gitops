@@ -19,6 +19,8 @@ spec:
 {{- if or $service.database (eq $name "config") }}
         azure.workload.identity/use: "true"
 {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum }}
     spec:
       serviceAccountName: realtime-monitoring-sa
       containers:
@@ -53,6 +55,7 @@ spec:
                   name: realtime-monitoring-kv-secrets
                   key: SPRING_DATASOURCE_PASSWORD
 {{- end }}
+
 
 
 
