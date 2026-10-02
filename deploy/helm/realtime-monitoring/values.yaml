@@ -81,3 +81,12 @@ redis:
 
 kafka:
   image: confluentinc/cp-kafka:7.6.1
+
+azure:
+  workloadIdentity:
+    clientId: "a9d7f4f9-6247-4cbb-bcfc-0eb9dc998659"
+
+  keyVault:
+    name: "rtm-kv-9bd0f37e"
+
+  tenantId: "604f1a96-cbe8-43f8-abbf-f8eaf5d85730"

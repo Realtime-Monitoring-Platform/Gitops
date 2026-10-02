@@ -16,11 +16,19 @@ spec:
       labels:
         app: {{ $name }}
         app.kubernetes.io/part-of: realtime-monitoring
+        azure.workload.identity/use: "true"
     spec:
+      serviceAccountName: realtime-monitoring-sa
       containers:
         - name: {{ $name }}
           image: {{ $service.image | quote }}
           imagePullPolicy: {{ $.Values.imagePullPolicy }}
+{{- if $service.database }}
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets"
+              readOnly: true
+{{- end }}
           ports:
             - name: http
               containerPort: {{ $service.port }}
@@ -91,5 +99,14 @@ spec:
               port: {{ $service.port }}
             initialDelaySeconds: 30
             periodSeconds: 10
+      {{- if $service.database }}
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: realtime-monitoring-keyvault
+{{- end }}
 ---
 {{ end }}
