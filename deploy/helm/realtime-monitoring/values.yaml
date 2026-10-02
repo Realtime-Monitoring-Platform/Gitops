@@ -15,6 +15,9 @@ services:
     port: 9005
     replicas: 1
     database: true
+    livenessPath: /actuator/health/liveness
+    readinessPath: /actuator/health/readiness
+  
   discovery:
     image: chedlyrebai/discovery-server:latest
     port: 8761

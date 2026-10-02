@@ -76,7 +76,7 @@ spec:
               value: aks
 {{- end }}
 
-{{- if or (eq $name "auth") (eq $name "user") (eq $name "notifications") }}
+{{- if or (eq $name "auth") (eq $name "user") (eq $name "notifications") (eq $name "device") }}
             - name: MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED
               value: "true"
             - name: MANAGEMENT_ENDPOINT_HEALTH_GROUP_LIVENESS_INCLUDE
@@ -102,7 +102,6 @@ spec:
                   name: realtime-monitoring-kv-secrets
                   key: GITHUB_TOKEN
 {{- end }}
-
           resources:
             requests:
               cpu: 100m
