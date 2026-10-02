@@ -64,7 +64,7 @@ spec:
               value: optional:configserver:http://config-service:9000
 {{- end }}
 
-{{- if or (eq $name "auth") (eq $name "user") }}
+{{- if or (eq $name "auth") (eq $name "user") (eq $name "notifications") }}
             - name: MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED
               value: "true"
             - name: MANAGEMENT_ENDPOINT_HEALTH_GROUP_LIVENESS_INCLUDE

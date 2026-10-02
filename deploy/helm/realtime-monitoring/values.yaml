@@ -33,10 +33,13 @@ services:
     public: false
     serviceName: gateway
   notifications:
-    image: chedlyrebai/notification-server:latest
+    image: chedlyrebai/notification-service:latest
     port: 8085
     replicas: 1
     database: true
+    livenessPath: /actuator/health/liveness
+    readinessPath: /actuator/health/readiness
+  
   query:
     image: chedlyrebai/query-service:latest
     port: 9007
