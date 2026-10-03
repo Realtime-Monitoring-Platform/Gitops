@@ -46,7 +46,18 @@ persistence:
   size: 5Gi
   accessModes:
     - ReadWriteOnce
+extraVolumes:
+  - name: secrets-store-inline
+    csi:
+      driver: secrets-store.csi.k8s.io
+      readOnly: true
+      volumeAttributes:
+        secretProviderClass: grafana-keyvault
 
+extraVolumeMounts:
+  - name: secrets-store-inline
+    mountPath: /mnt/secrets-store
+    readOnly: true
 ingress:
   enabled: false
   ingressClassName: ""
