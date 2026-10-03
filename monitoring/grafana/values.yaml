@@ -46,18 +46,33 @@ persistence:
   size: 5Gi
   accessModes:
     - ReadWriteOnce
-extraVolumes:
-  - name: secrets-store-inline
-    csi:
-      driver: secrets-store.csi.k8s.io
-      readOnly: true
-      volumeAttributes:
-        secretProviderClass: grafana-keyvault
 
-extraVolumeMounts:
-  - name: secrets-store-inline
-    mountPath: /mnt/secrets-store
-    readOnly: true
+# ---------------------------------------------------------------------------
+# NOTE: no CSI inline volume is mounted into the Grafana pod on purpose.
+# The Kubernetes Secret `grafana-admin-secret` is synced by the Secrets Store
+# CSI driver the first time ANY pod mounts `grafana-keyvault` (see
+# manifests/secretproviderclass-grafana.yaml), OR you create it manually:
+#   kubectl -n monitoring create secret generic grafana-admin-secret `
+#     --from-literal=admin-user=admin `
+#     --from-literal=admin-password='<strong-password>'
+# Mounting the CSI volume directly inside Grafana would force a hard
+# dependency on the CSI driver + a federated workload-identity credential for
+# the chart-created ServiceAccount, which most clusters do not have yet.
+# If you DO have the driver + federated credential, uncomment the block below
+# AND the serviceAccount annotations further down.
+# ---------------------------------------------------------------------------
+# extraVolumes:
+#   - name: secrets-store-inline
+#     csi:
+#       driver: secrets-store.csi.k8s.io
+#       readOnly: true
+#       volumeAttributes:
+#         secretProviderClass: grafana-keyvault
+# extraVolumeMounts:
+#   - name: secrets-store-inline
+#     mountPath: /mnt/secrets-store
+#     readOnly: true
+
 ingress:
   enabled: false
   ingressClassName: ""
@@ -119,6 +134,12 @@ serviceAccount:
   create: true
   name: ""
   automount: true
+  # Uncomment ONLY if you mount the CSI inline volume (see above) AND you
+  # created the matching federated workload-identity credential for this SA:
+  # annotations:
+  #   azure.workload.identity/client-id: "a9d7f4f9-6247-4cbb-bcfc-0eb9dc998659"
+  # labels:
+  #   azure.workload.identity/use: "true"
 
 nodeSelector:
   kubernetes.io/os: linux
