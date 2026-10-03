@@ -1,0 +1,18 @@
+# =============================================================================
+# Monitoring stack - GitOps entrypoint
+# =============================================================================
+# This kustomization lists ONLY the Argo CD Application manifests for the
+# monitoring stack. It is consumed by the parent "app-of-apps" Application
+# (gitops/argocd/monitoring.yaml) so that Argo CD itself manages them.
+#
+# The Helm values files (prometheus/values.yaml, grafana/values.yaml) and the
+# grafana/manifests/* are intentionally NOT listed here: they are consumed by
+# the individual Applications (values) or by the grafana Application's second
+# source (manifests), never applied as raw cluster objects.
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - prometheus/application.yaml
+  - grafana/application.yaml

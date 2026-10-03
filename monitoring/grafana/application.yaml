@@ -1,0 +1,65 @@
+# =============================================================================
+# Argo CD Application - Grafana
+# =============================================================================
+# Deploys the official Grafana Helm chart (grafana-community/helm-charts, the
+# successor of grafana/helm-charts after the Jan-2026 migration).
+#
+# Three sources are used:
+#   1. this Git repo (ref: values) -> holds the Helm values file
+#   2. the Grafana Helm chart      -> pinned chart version
+#   3. monitoring/grafana/manifests -> extra manifests (SecretProviderClass and
+#      the provisioned dashboard ConfigMaps) applied to the monitoring namespace
+#
+# Grafana is ClusterIP-only and reaches Prometheus over the internal k8s DNS.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-grafana
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: realtime-monitoring
+    app.kubernetes.io/component: monitoring
+spec:
+  project: default
+
+  sources:
+    # --- Source 1: this Git repository (holds the Helm values) ---------------
+    - repoURL: https://github.com/Realtime-Monitoring-Platform/Gitops.git
+      targetRevision: main
+      ref: values
+
+    # --- Source 2: the official Grafana Helm chart ---------------------------
+    - repoURL: https://grafana-community.github.io/helm-charts
+      chart: grafana
+      # Pinned/stable chart version (never "latest")
+      targetRevision: 13.2.7
+      helm:
+        releaseName: grafana
+        valueFiles:
+          - $values/monitoring/grafana/values.yaml
+
+    # --- Source 3: extra manifests (SecretProviderClass + dashboards) --------
+    - repoURL: https://github.com/Realtime-Monitoring-Platform/Gitops.git
+      targetRevision: main
+      path: monitoring/grafana/manifests
+      directory:
+        recurse: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

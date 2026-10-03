@@ -1,0 +1,30 @@
+
+#   kubectl apply -f gitops/argocd/monitoring.yaml
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: realtime-monitoring
+    app.kubernetes.io/component: monitoring
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Realtime-Monitoring-Platform/Gitops.git
+    targetRevision: main
+    path: monitoring
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,179 @@
+# =============================================================================
+# kube-prometheus-stack values (chart 91.9.0)
+# =============================================================================
+# Sized for an Azure Student / low-cost AKS cluster (single small node pool).
+# Every value is intentionally modest; raise the resources if the cluster grows.
+#
+# NOTE: fullnameOverride makes the generated names deterministic, which is what
+# the Grafana datasource URL depends on:
+#   Prometheus Service = monitoring-prometheus (namespace monitoring, port 9090)
+# =============================================================================
+fullnameOverride: monitoring
+
+# CRDs (ServiceMonitor / PodMonitor / PrometheusRule / Prometheus / Alertmanager)
+crds:
+  enabled: true
+
+# Grafana is deployed by the dedicated Application in ../grafana instead.
+grafana:
+  enabled: false
+
+# -----------------------------------------------------------------------------
+# Prometheus server
+# -----------------------------------------------------------------------------
+prometheus:
+  enabled: true
+
+  # Internal ClusterIP only: Grafana queries it over the cluster network.
+  service:
+    type: ClusterIP
+    port: 9090
+
+  # --- ServiceMonitor for the Spring Boot microservices ----------------------
+  # Discovered Kubernetes-natively: this ServiceMonitor selects the Services in
+  # the realtime-monitoring namespace by their existing label
+  # (app.kubernetes.io/part-of: realtime-monitoring) and scrapes the `http`
+  # port on /actuator/prometheus.
+  additionalServiceMonitors:
+    - name: realtime-monitoring-spring-boot
+      namespaceSelector:
+        matchNames:
+          - realtime-monitoring
+      selector:
+        matchLabels:
+          app.kubernetes.io/part-of: realtime-monitoring
+      endpoints:
+        - port: http
+          path: /actuator/prometheus
+          scheme: http
+          interval: 30s
+          scrapeTimeout: 10s
+          honorLabels: true
+          # Drop Services that do not expose a Prometheus endpoint yet:
+          #   frontend-service     -> static nginx, no actuator
+          #   config-service       -> Spring Cloud Config server, no actuator
+          #   discovery-server     -> Eureka server, no actuator
+          # Remove an entry once that service exposes /actuator/prometheus.
+          relabelings:
+            - sourceLabels: [__meta_kubernetes_service_name]
+              regex: frontend-service|config-service|discovery-server
+              action: drop
+
+  prometheusSpec:
+    # Keep the footprint small for a student cluster
+    replicas: 1
+    retention: 7d
+    retentionSize: 5GB
+
+    # Scrape every ServiceMonitor/PodMonitor in the cluster, in any namespace.
+    # (By default the chart only selects monitors labelled with the release.)
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorNamespaceSelector: {}
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+    # Persistent storage on the AKS default storage class (Azure Disk CSI).
+    # storageClassName: managed-csi is the standard AKS StorageClass; set it to
+    # "" to fall back to the cluster's default StorageClass.
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: managed-csi
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+
+    nodeSelector:
+      kubernetes.io/os: linux
+    tolerations: []
+
+# -----------------------------------------------------------------------------
+# AKS control plane components are managed by Azure and cannot be scraped.
+# Disabling these avoids 3-4 permanently DOWN targets.
+# -----------------------------------------------------------------------------
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+# -----------------------------------------------------------------------------
+# Alertmanager (kept small; ephemeral storage)
+# -----------------------------------------------------------------------------
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+
+# -----------------------------------------------------------------------------
+# Prometheus Operator
+# -----------------------------------------------------------------------------
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  admissionWebhooks:
+    patch:
+      resources:
+        requests:
+          cpu: 20m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+  nodeSelector:
+    kubernetes.io/os: linux
+  tolerations: []
+
+# -----------------------------------------------------------------------------
+# node-exporter (node CPU / memory / disk / network metrics)
+# -----------------------------------------------------------------------------
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+  nodeSelector:
+    kubernetes.io/os: linux
+  tolerations: []
+
+# -----------------------------------------------------------------------------
+# kube-state-metrics (Kubernetes workload/object metrics)
+# -----------------------------------------------------------------------------
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  nodeSelector:
+    kubernetes.io/os: linux
+  tolerations: []

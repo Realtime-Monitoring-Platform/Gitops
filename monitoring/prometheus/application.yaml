@@ -1,0 +1,63 @@
+# =============================================================================
+# Argo CD Application - Prometheus (kube-prometheus-stack)
+# =============================================================================
+# Deploys the upstream kube-prometheus-stack Helm chart, which provides:
+#   * Prometheus Operator (+ Prometheus CRD/RBAC)
+#   * Prometheus (server)          -> scrapes the cluster + the Spring Boot apps
+#   * Alertmanager
+#   * node-exporter (DaemonSet)    -> node CPU/memory/disk/network metrics
+#   * kube-state-metrics           -> Kubernetes workload/object metrics
+#
+# Grafana is NOT deployed by this Application (grafana.enabled=false in
+# values.yaml) so that it can be versioned and lifecycled independently.
+#
+# Everything is GitOps: no `helm install` / `kubectl apply` is needed for the
+# resources. See gitops/monitoring/README.md for the one-time bootstrap.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-prometheus
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: realtime-monitoring
+    app.kubernetes.io/component: monitoring
+spec:
+  project: default
+
+  # --- Source 1: this Git repository (holds the Helm values) -----------------
+  sources:
+    - repoURL: https://github.com/Realtime-Monitoring-Platform/Gitops.git
+      targetRevision: main
+      ref: values
+
+    # --- Source 2: the official Prometheus community Helm chart ---------------
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      # Pinned/stable chart version (never "latest")
+      targetRevision: 91.9.0
+      helm:
+        releaseName: monitoring
+        valueFiles:
+          - $values/monitoring/prometheus/values.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # Create the `monitoring` namespace automatically if it does not exist
+      - CreateNamespace=true
+      # Required: the chart ships very large CRDs that exceed the client-side
+      # apply annotation limit (last-applied-configuration > 262144 bytes).
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

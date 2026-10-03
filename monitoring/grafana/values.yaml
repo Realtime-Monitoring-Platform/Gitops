@@ -1,0 +1,114 @@
+# =============================================================================
+# Grafana values (chart grafana 13.2.7, repo grafana-community/helm-charts)
+# =============================================================================
+# ClusterIP-only (no Ingress controller exists in the repo). Grafana reaches
+# Prometheus over the internal DNS name created by kube-prometheus-stack with
+# fullnameOverride=monitoring:
+#   http://monitoring-prometheus.monitoring.svc.cluster.local:9090
+# =============================================================================
+
+replicas: 1
+
+image:
+  registry: docker.io
+  repository: grafana/grafana
+  # Falls back to the chart appVersion when empty
+  tag: ""
+
+service:
+  enabled: true
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+# ---------------------------------------------------------------------------
+# Admin credentials - NEVER hard-code a password here.
+# The password is synced from Azure Key Vault object `grafana-admin-password`
+# into the Kubernetes Secret `grafana-admin-secret` (key: admin-password) by
+# monitoring/grafana/manifests/secretproviderclass-grafana.yaml.
+# Create the Key Vault secret once, out of band:
+#   az keyvault secret set --vault-name rtm-kv-9bd0f37e \
+#     --name grafana-admin-password --value '<strong-password>'
+# ---------------------------------------------------------------------------
+adminUser: admin
+admin:
+  existingSecret: grafana-admin-secret
+  userKey: admin-user
+  passwordKey: admin-password
+
+# ---------------------------------------------------------------------------
+# Persistence - survives pod recreation on AKS (Azure Disk CSI).
+# Set storageClassName: "" to use the cluster default StorageClass.
+# ---------------------------------------------------------------------------
+persistence:
+  enabled: true
+  storageClassName: managed-csi
+  size: 5Gi
+  accessModes:
+    - ReadWriteOnce
+
+ingress:
+  enabled: false
+  ingressClassName: ""
+  hosts: []
+  tls: []
+
+# Configurable hostname placeholder for documentation/CI use
+grafanaHostname: grafana.<my-domain>
+
+# ---------------------------------------------------------------------------
+# Prometheus as the default datasource (internal service DNS, not localhost)
+# ---------------------------------------------------------------------------
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        access: proxy
+        isDefault: true
+        url: http://monitoring-prometheus.monitoring.svc.cluster.local:9090
+        jsonData:
+          timeInterval: 30s
+
+# Dashboard providers + sidecar auto-discovery (dashboards come from the
+# ConfigMaps in monitoring/grafana/manifests/dashboards-*.yaml).
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: monitoring
+        orgId: 1
+        folder: Monitoring
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/monitoring
+
+sidecar:
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    labelValue: "1"
+    searchNamespace: monitoring
+  datasources:
+    enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+serviceAccount:
+  create: true
+  name: ""
+  automount: true
+
+nodeSelector:
+  kubernetes.io/os: linux
+tolerations: []
