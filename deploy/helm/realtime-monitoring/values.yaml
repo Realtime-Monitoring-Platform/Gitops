@@ -43,7 +43,7 @@ services:
     image: chedlyrebai/frontend:latest
     port: 4173
     replicas: 1
-    public: false
+    public: true
 
     serviceName: frontend-service
     healthPath: /
