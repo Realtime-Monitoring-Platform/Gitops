@@ -8,34 +8,42 @@ metadata:
     app.kubernetes.io/part-of: realtime-monitoring
 spec:
   replicas: {{ $service.replicas | default 2 }}
+
   selector:
     matchLabels:
       app: {{ $name }}
+
   template:
     metadata:
       labels:
         app: {{ $name }}
         app.kubernetes.io/part-of: realtime-monitoring
+
 {{- if or $service.database (eq $name "config") }}
         azure.workload.identity/use: "true"
 {{- end }}
+
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum }}
+
     spec:
       serviceAccountName: realtime-monitoring-sa
+
       containers:
         - name: {{ $name }}
           image: {{ $service.image | quote }}
           imagePullPolicy: {{ $.Values.imagePullPolicy }}
+
 {{- if eq $name "device" }}
           volumeMounts:
             - name: device-certs
-              mountPath: "/mnt/secrets"
+              mountPath: /mnt/secrets
               readOnly: true
+
 {{- else if or $service.database (eq $name "config") }}
           volumeMounts:
             - name: secrets-store
-              mountPath: "/mnt/secrets"
+              mountPath: /mnt/secrets
               readOnly: true
 {{- end }}
 
@@ -43,17 +51,21 @@ spec:
             - name: http
               containerPort: {{ $service.port }}
               protocol: TCP
+
 {{- if $service.grpcPort }}
             - name: grpc
               containerPort: {{ $service.grpcPort }}
               protocol: TCP
 {{- end }}
+
           envFrom:
             - configMapRef:
                 name: {{ $.Values.configMapName }}
+
           env:
             - name: SERVER_PORT
               value: {{ $service.port | quote }}
+
 {{- if $service.database }}
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
@@ -62,8 +74,6 @@ spec:
                   key: SPRING_DATASOURCE_PASSWORD
 {{- end }}
 
-
-
 {{- if eq $name "config" }}
             - name: SPRING_CLOUD_CONFIG_ENABLED
               value: "false"
@@ -71,6 +81,7 @@ spec:
             - name: SPRING_CONFIG_IMPORT
               value: optional:configserver:http://config-service:9000
 {{- end }}
+
 {{- if eq $name "device" }}
             - name: SPRING_PROFILES_ACTIVE
               value: aks
@@ -79,11 +90,14 @@ spec:
 {{- if or (eq $name "auth") (eq $name "user") (eq $name "notifications") (eq $name "device") }}
             - name: MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED
               value: "true"
+
             - name: MANAGEMENT_ENDPOINT_HEALTH_GROUP_LIVENESS_INCLUDE
               value: livenessState
+
             - name: MANAGEMENT_ENDPOINT_HEALTH_GROUP_READINESS_INCLUDE
               value: readinessState,db
 {{- end }}
+
 {{- if $service.database }}
             - name: SPRING_DATASOURCE_URL
               valueFrom:
@@ -91,10 +105,12 @@ spec:
                   name: {{ $.Values.configMapName }}
                   key: SPRING_DATASOURCE_URL_{{ upper $name }}
 {{- end }}
+
 {{- if eq $name "auth" }}
             - name: GRPC_CLIENT_USER_SERVICE_ADDRESS
               value: static://user-service:9095
 {{- end }}
+
 {{- if eq $name "config" }}
             - name: GITHUB_TOKEN
               valueFrom:
@@ -102,6 +118,7 @@ spec:
                   name: realtime-monitoring-kv-secrets
                   key: GITHUB_TOKEN
 {{- end }}
+
           resources:
             requests:
               cpu: 100m
@@ -109,18 +126,21 @@ spec:
             limits:
               cpu: "1000m"
               memory: 1Gi
+
           livenessProbe:
             httpGet:
               path: {{ $service.livenessPath | default ($service.healthPath | default "/actuator/health") }}
               port: {{ $service.port }}
             initialDelaySeconds: 60
             periodSeconds: 15
+
           readinessProbe:
             httpGet:
               path: {{ $service.readinessPath | default ($service.healthPath | default "/actuator/health") }}
               port: {{ $service.port }}
             initialDelaySeconds: 30
             periodSeconds: 10
+
 {{- if eq $name "device" }}
       volumes:
         - name: device-certs
@@ -129,6 +149,7 @@ spec:
             readOnly: true
             volumeAttributes:
               secretProviderClass: device-service-keyvault
+
 {{- else if or $service.database (eq $name "config") }}
       volumes:
         - name: secrets-store
@@ -138,5 +159,6 @@ spec:
             volumeAttributes:
               secretProviderClass: realtime-monitoring-keyvault
 {{- end }}
+
 ---
-{{ end }}
+{{- end }}

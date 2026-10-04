@@ -1,107 +1,159 @@
+
 services:
+
   auth:
     image: chedlyrebai/authentification-server:latest
     port: 9080
     replicas: 1
     database: true
+    public: false
+
     livenessPath: /actuator/health/liveness
     readinessPath: /actuator/health/readiness
+
+
   config:
     image: chedlyrebai/config-server:latest
     port: 9000
     replicas: 1
+    public: false
+
+
   device:
     image: chedlyrebai/device-service:latest
     port: 9005
     replicas: 1
     database: true
+    public: false
+
     livenessPath: /actuator/health/liveness
     readinessPath: /actuator/health/readiness
-  
+
+
   discovery:
     image: chedlyrebai/discovery-server:latest
     port: 8761
     replicas: 1
+    public: false
+
     serviceName: discovery-server
+
+
   frontend:
     image: chedlyrebai/frontend:latest
     port: 4173
     replicas: 1
     public: false
+
+    serviceName: frontend-service
     healthPath: /
+
+
   gateway:
     image: chedlyrebai/getaway-service:latest
     port: 8222
     replicas: 1
     public: false
+
     serviceName: gateway
 
-ingress:
-  enabled: true
-  className: nginx
-  # Single public entrypoint; ArgoCD + Azure LB point here.
-  # Replace with your real domain / Azure FQDN, e.g. rtm.westeurope.cloudapp.azure.com
-  host: realtime-monitoring.local
-  # frontend "/" -> frontend-service:4173
-  frontend:
-    name: frontend
-    serviceName: frontend-service
-    servicePort: 4173
-    path: /
-    pathType: Prefix
-  # api "/api" -> gateway:8222 (gateway routes /api/v1/** downstream)
-  api:
-    name: api
-    serviceName: gateway
-    servicePort: 8222
-    path: /api
-    pathType: Prefix
+
   notifications:
     image: chedlyrebai/notification-service:latest
     port: 8085
     replicas: 1
     database: true
+    public: false
+
     livenessPath: /actuator/health/liveness
     readinessPath: /actuator/health/readiness
-  
+
+
   query:
     image: chedlyrebai/query-service:latest
     port: 9007
     replicas: 1
     database: true
+    public: false
+
+
   tenant:
     image: chedlyrebai/tenant-service:latest
     port: 9004
     replicas: 1
     database: true
+    public: false
+
+
   user:
     image: chedlyrebai/usermanagement-service:latest
     port: 9003
     grpcPort: 9095
     replicas: 1
     database: true
+    public: false
+
     livenessPath: /actuator/health/liveness
     readinessPath: /actuator/health/readiness
 
+
+
+ingress:
+  enabled: true
+
+  className: nginx
+
+  host: realtime-monitoring.local
+
+  frontend:
+    serviceName: frontend-service
+    servicePort: 4173
+    path: /
+    pathType: Prefix
+
+  api:
+    serviceName: gateway
+    servicePort: 8222
+    path: /api
+    pathType: Prefix
+
+
+
+
 imagePullPolicy: Always
+
+
 configMapName: realtime-monitoring-config
+
+
 secretName: realtime-monitoring-secrets
 
 
 appConfig:
+
   EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-server:8761/eureka/"
   SPRING_CLOUD_CONFIG_ENABLED: "true"
   SPRING_CLOUD_CONFIG_FAIL_FAST: "true"
   SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS: "240"
+
   SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL: "1000"
+
   SPRING_CLOUD_CONFIG_RETRY_MULTIPLIER: "1.5"
+
   SPRING_CLOUD_CONFIG_RETRY_MAX_INTERVAL: "5000"
+
   SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+
   SPRING_DATASOURCE_USERNAME: "postgres"
+
   SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "2"
+
   SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "0"
+
   SPRING_DATA_REDIS_HOST: "redis"
+
   SPRING_DATA_REDIS_PORT: "6379"
+
   SPRING_DATASOURCE_URL_AUTH: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/jwt?sslmode=require"
   SPRING_DATASOURCE_URL_DEVICE: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/device_management?sslmode=require"
   SPRING_DATASOURCE_URL_NOTIFICATIONS: "jdbc:postgresql://rtm-postgres.postgres.database.azure.com:5432/notification?sslmode=require"
@@ -113,10 +165,16 @@ redis:
   enabled: true
   image: redis:7-alpine
 
+
+
+
 kafka:
   image: confluentinc/cp-kafka:7.6.1
 
+
+
 azure:
+
   workloadIdentity:
     clientId: "a9d7f4f9-6247-4cbb-bcfc-0eb9dc998659"
 
