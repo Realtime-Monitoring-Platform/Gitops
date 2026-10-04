@@ -1,0 +1,33 @@
+{{- if .Values.ingress.enabled }}
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: realtime-monitoring
+  labels:
+    app.kubernetes.io/part-of: realtime-monitoring
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 16m
+spec:
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.frontend.path }}
+            pathType: {{ .Values.ingress.frontend.pathType }}
+            backend:
+              service:
+                name: {{ .Values.ingress.frontend.serviceName }}
+                port:
+                  number: {{ .Values.ingress.frontend.servicePort }}
+
+          - path: {{ .Values.ingress.api.path }}
+            pathType: {{ .Values.ingress.api.pathType }}
+            backend:
+              service:
+                name: {{ .Values.ingress.api.serviceName }}
+                port:
+                  number: {{ .Values.ingress.api.servicePort }}
+
+{{- end }}

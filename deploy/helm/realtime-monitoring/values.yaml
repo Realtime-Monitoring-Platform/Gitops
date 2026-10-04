@@ -43,7 +43,7 @@ services:
     image: chedlyrebai/frontend:latest
     port: 4173
     replicas: 1
-    public: true
+    public: false
 
     serviceName: frontend-service
     healthPath: /
@@ -99,7 +99,7 @@ services:
 
 
 ingress:
-  enabled: false
+  enabled: true
 
   className: nginx
 
