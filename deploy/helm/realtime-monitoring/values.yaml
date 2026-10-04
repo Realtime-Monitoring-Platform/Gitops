@@ -33,7 +33,7 @@ services:
     image: chedlyrebai/getaway-service:latest
     port: 8222
     replicas: 1
-    public: false
+    public: true
     serviceName: gateway
   notifications:
     image: chedlyrebai/notification-service:latest
