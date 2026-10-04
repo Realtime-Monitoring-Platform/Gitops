@@ -1,0 +1,50 @@
+{{- if .Values.ingress.enabled }}
+{{- $host := .Values.ingress.host }}
+{{- $className := .Values.ingress.className }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend
+  labels:
+    app.kubernetes.io/part-of: realtime-monitoring
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: {{ $className | quote }}
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: {{ .Values.ingress.frontend.pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ .Values.ingress.frontend.serviceName | quote }}
+                port:
+                  number: {{ .Values.ingress.frontend.servicePort }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api
+  labels:
+    app.kubernetes.io/part-of: realtime-monitoring
+  annotations:
+    # Keep /api prefix: gateway predicates are Path=/api/v1/**.
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 16m
+spec:
+  ingressClassName: {{ $className | quote }}
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.api.path }}
+            pathType: {{ .Values.ingress.api.pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ .Values.ingress.api.serviceName | quote }}
+                port:
+                  number: {{ .Values.ingress.api.servicePort }}
+{{- end }}

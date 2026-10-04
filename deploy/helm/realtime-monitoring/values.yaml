@@ -27,14 +27,35 @@ services:
     image: chedlyrebai/frontend:latest
     port: 4173
     replicas: 1
-    public: true
+    public: false
     healthPath: /
   gateway:
     image: chedlyrebai/getaway-service:latest
     port: 8222
     replicas: 1
-    public: true
+    public: false
     serviceName: gateway
+
+ingress:
+  enabled: true
+  className: nginx
+  # Single public entrypoint; ArgoCD + Azure LB point here.
+  # Replace with your real domain / Azure FQDN, e.g. rtm.westeurope.cloudapp.azure.com
+  host: realtime-monitoring.local
+  # frontend "/" -> frontend-service:4173
+  frontend:
+    name: frontend
+    serviceName: frontend-service
+    servicePort: 4173
+    path: /
+    pathType: Prefix
+  # api "/api" -> gateway:8222 (gateway routes /api/v1/** downstream)
+  api:
+    name: api
+    serviceName: gateway
+    servicePort: 8222
+    path: /api
+    pathType: Prefix
   notifications:
     image: chedlyrebai/notification-service:latest
     port: 8085
