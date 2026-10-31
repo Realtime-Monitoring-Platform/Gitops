@@ -61,26 +61,225 @@ data:
       "timezone": "browser",
       "schemaVersion": 39,
       "version": 1,
-      "panels": [
-        {
-          "id": 1, "type": "timeseries", "title": "Container CPU",
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "targets": [{"expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"realtime-monitoring\", container != \"\", container != \"POD\"}[5m]))", "legendFormat": "{{pod}}"}]
+       "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total Services",
+      "gridPos": {"x": 0, "y": 0, "w": 3, "h": 4},
+      "targets": [{"expr": "count(up{namespace=\"realtime-monitoring\"})", "refId": "A"}],
+      "options": {"reduceOptions": {"values": False, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": None}]}}}
+    },
+    {
+      "id": 2,
+      "type": "stat", "title": "Services UP",
+      "gridPos": {"x": 3, "y": 0, "w": 3, "h": 4},
+      "targets": [{"expr": "count(up{namespace=\"realtime-monitoring\"} == 1)", "refId": "A"}],
+      "options": {"reduceOptions": {"values": False, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": None}]}}}
+    },
+    {
+      "id": 3,
+      "type": "stat", "title": "Services DOWN",
+      "gridPos": {"x": 6, "y": 0, "w": 3, "h": 4},
+      "targets": [{"expr": "count(up{namespace=\"realtime-monitoring\"} == 0)", "refId": "A"}],
+      "options": {"reduceOptions": {"values": False, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": None}]}}}
+    },
+    {
+      "id": 4,
+      "type": "stat", "title": "Total Request Rate (req/s)",
+      "gridPos": {"x": 9, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "sum(sum(rate(http_server_requests_seconds_count{namespace=\"realtime-monitoring\"}[5m])) by (service))", "refId": "A"}],
+      "options": {"reduceOptions": {"values": False, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+      "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 2}}
+    },
+    {
+      "id": 5,
+      "type": "stat", "title": "Total Error Rate (5xx/s)",
+      "gridPos": {"x": 15, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "sum(rate(http_server_requests_seconds_count{namespace=\"realtime-monitoring\",status=~\"5..\"}[5m]))", "refId": "A"}],
+      "options": {"reduceOptions": {"values": False, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+      "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 2, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": None}, {"color": "red", "value": 1}]}}}
+    },
+    {
+      "id": 6,
+      "type": "stat", "title": "Avg Response Time p95",
+      "gridPos": {"x": 21, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{namespace=\"realtime-monitoring\"}[5m])) by (le))", "refId": "A"}],
+      "options": {"reduceOptions": {"values": False, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+      "fieldConfig": {"defaults": {"unit": "s", "decimals": 4, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": None}, {"color": "orange", "value": 0.5}, {"color": "red", "value": 1.0}]}}}
+    },
+    {
+      "id": 7,
+      "type": "table", "title": "Service Health Status",
+      "gridPos": {"x": 0, "y": 4, "w": 24, "h": 7},
+      "targets": [{"expr": "up{namespace=\"realtime-monitoring\"}", "refId": "A"}],
+      "options": {"showHeader": True, "sortBy": [{"displayName": "Instance", "desc": False}], "cellOpts": {"type": "auto"}, "footer": {"enable": False}},
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"options": {"match": "0", "result": {"text": "DOWN", "color": "red"}, "type": 1}},
+            {"options": {"match": "1", "result": {"text": "UP", "color": "green"}, "type": 1}}
+          ],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": None}, {"color": "green", "value": 0.5}]}
         },
-        {
-          "id": 2, "type": "timeseries", "title": "Container memory working set",
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "targets": [{"expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"realtime-monitoring\", container != \"\", container != \"POD\"})", "legendFormat": "{{pod}}"}]
-        },
-        {
-          "id": 3, "type": "timeseries", "title": "Pod restarts",
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "targets": [{"expr": "sum by (pod) (kube_pod_container_status_restarts_total{namespace=\"realtime-monitoring\"})", "legendFormat": "{{pod}}"}]
-        },
-        {
-          "id": 4, "type": "stat", "title": "Running pods",
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "targets": [{"expr": "count(kube_pod_status_phase{namespace=\"realtime-monitoring\", phase=\"Running\"} == 1)"}]
-        }
-      ]
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Instance"}, "properties": [{"id": "custom.displayName", "value": "Service"}]},
+          {"matcher": {"id": "byName", "options": "Value"}, "properties": [{"id": "custom.displayName", "value": "Status"}]}
+        ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries", "title": "JVM Heap Memory by Service",
+      "gridPos": {"x": 0, "y": 11, "w": 12, "h": 7},
+      "targets": [{"expr": "jvm_memory_used_bytes{area=\"heap\",namespace=\"realtime-monitoring\"} / 1024 / 1024", "legendFormat": "{{instance}} (MB)", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "bytes", "decimals": 2}}
+    },
+    {
+      "id": 9,
+      "type": "timeseries", "title": "JVM Non-Heap Memory by Service",
+      "gridPos": {"x": 12, "y": 11, "w": 12, "h": 7},
+      "targets": [{"expr": "jvm_memory_used_bytes{area=\"nonheap\",namespace=\"realtime-monitoring\"} / 1024 / 1024", "legendFormat": "{{instance}} (MB)", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "bytes", "decimals": 2}}
+    },
+    {
+      "id": 10,
+      "type": "timeseries", "title": "GC Collections per Second",
+      "gridPos": {"x": 0, "y": 18, "w": 12, "h": 7},
+      "targets": [{"expr": "sum(rate(jvm_gc_collection_seconds_count{namespace=\"realtime-monitoring\"}[5m])) by (instance)", "legendFormat": "{{instance}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 2}}
+    },
+    {
+      "id": 11,
+      "type": "timeseries", "title": "GC Time Spent (ms/sec)",
+      "gridPos": {"x": 12, "y": 18, "w": 12, "h": 7},
+      "targets": [{"expr": "sum(rate(jvm_gc_collection_seconds_sum{namespace=\"realtime-monitoring\"}[5m])) by (instance) * 1000", "legendFormat": "{{instance}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "ms", "decimals": 2}}
+    },
+    {
+      "id": 12,
+      "type": "timeseries", "title": "Active Threads by Service",
+      "gridPos": {"x": 0, "y": 25, "w": 12, "h": 7},
+      "targets": [{"expr": "jvm_threads_current{namespace=\"realtime-monitoring\"}", "legendFormat": "{{instance}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": None}, {"color": "orange", "value": 200}, {"color": "red", "value": 500}]}}}
+    },
+    {
+      "id": 13,
+      "type": "timeseries", "title": "Process Uptime (seconds)",
+      "gridPos": {"x": 12, "y": 25, "w": 12, "h": 7},
+      "targets": [{"expr": "process_uptime_seconds{namespace=\"realtime-monitoring\"}", "legendFormat": "{{instance}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "s", "decimals": 0}}
+    },
+    {
+      "id": 14,
+      "type": "timeseries", "title": "HTTP Request Rate by Service",
+      "gridPos": {"x": 0, "y": 32, "w": 16, "h": 7},
+      "targets": [{"expr": "sum(rate(http_server_requests_seconds_count{namespace=\"realtime-monitoring\"}[5m])) by (service)", "legendFormat": "{{service}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 2}}
+    },
+    {
+      "id": 15,
+      "type": "timeseries", "title": "HTTP Response Time p95 by Service",
+      "gridPos": {"x": 16, "y": 32, "w": 8, "h": 7},
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{namespace=\"realtime-monitoring\"}[5m])) by (le, service))", "legendFormat": "{{service}} p95", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "s", "decimals": 4}}
+    },
+    {
+      "id": 16,
+      "type": "timeseries", "title": "HTTP Error Rate (5xx) by Service",
+      "gridPos": {"x": 0, "y": 39, "w": 12, "h": 7},
+      "targets": [{"expr": "sum(rate(http_server_requests_seconds_count{namespace=\"realtime-monitoring\",status=~\"5..\"}[5m])) by (service)", "legendFormat": "{{service}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 2}}
+    },
+    {
+      "id": 17,
+      "type": "timeseries", "title": "HTTP Client Error Rate (4xx) by Service",
+      "gridPos": {"x": 12, "y": 39, "w": 12, "h": 7},
+      "targets": [{"expr": "sum(rate(http_server_requests_seconds_count{namespace=\"realtime-monitoring\",status=~\"4..\"}[5m])) by (service)", "legendFormat": "{{service}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 2}}
+    },
+    {
+      "id": 18,
+      "type": "timeseries", "title": "HikariCP Active Connections",
+      "gridPos": {"x": 0, "y": 46, "w": 12, "h": 7},
+      "targets": [{"expr": "hikaricp_connections_active{namespace=\"realtime-monitoring\"}", "legendFormat": "{{instance}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0}}
+    },
+    {
+      "id": 19,
+      "type": "timeseries", "title": "HikariCP Idle Connections",
+      "gridPos": {"x": 12, "y": 46, "w": 12, "h": 7},
+      "targets": [{"expr": "hikaricp_connections_idle{namespace=\"realtime-monitoring\"}", "legendFormat": "{{instance}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0}}
+    },
+    {
+      "id": 20,
+      "type": "timeseries", "title": "HikariCP Pending Connections",
+      "gridPos": {"x": 0, "y": 53, "w": 12, "h": 7},
+      "targets": [{"expr": "hikaricp_connections_pending{namespace=\"realtime-monitoring\"}", "legendFormat": "{{instance}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0}}
+    },
+    {
+      "id": 21,
+      "type": "timeseries", "title": "Connection Pool Usage %",
+      "gridPos": {"x": 12, "y": 53, "w": 12, "h": 7},
+      "targets": [{"expr": "hikaricp_connections_active{namespace=\"realtime-monitoring\"} / hikaricp_connections_max{namespace=\"realtime-monitoring\"} * 100", "legendFormat": "{{instance}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "decimals": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": None}, {"color": "orange", "value": 70}, {"color": "red", "value": 90}]}}}
+    },
+    {
+      "id": 22,
+      "type": "timeseries", "title": "Kafka Consumer Lag",
+      "gridPos": {"x": 0, "y": 60, "w": 16, "h": 7},
+      "targets": [{"expr": "kafka_consumergroup_lag{namespace=\"realtime-monitoring\"}", "legendFormat": "{{consumergroup}} {{topic}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": None}, {"color": "orange", "value": 1000}, {"color": "red", "value": 10000}]}}}
+    },
+    {
+      "id": 23,
+      "type": "stat", "title": "Kafka Topics",
+      "gridPos": {"x": 16, "y": 60, "w": 4, "h": 4},
+      "targets": [{"expr": "count(kafka_topic_partitions{namespace=\"realtime-monitoring\"})", "refId": "A"}],
+      "options": {"reduceOptions": {"values": False, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    },
+    {
+      "id": 24,
+      "type": "stat", "title": "Redis Pod Restarts",
+      "gridPos": {"x": 0, "y": 64, "w": 4, "h": 4},
+      "targets": [{"expr": "kube_pod_container_status_restarts_total{namespace=\"realtime-monitoring\",pod=~\"redis-.*\"}", "refId": "A"}],
+      "options": {"reduceOptions": {"values": False, "calcs": ["max"], "fields": ""}, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    },
+    {
+      "id": 24,
+      "type": "stat", "title": "Kafka Pod Restarts",
+      "gridPos": {"x": 4, "y": 60, "w": 4, "h": 4},
+      "targets": [{"expr": "kube_pod_container_status_restarts_total{namespace=\"realtime-monitoring\",pod=~\"kafka-.*\"}", "refId": "A"}],
+      "options": {"reduceOptions": {"values": False, "calcs": ["max"], "fields": ""}, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    },
+    {
+      "id": 25,
+      "type": "stat", "title": "PostgreSQL Pod Restarts",
+      "gridPos": {"x": 8, "y": 60, "w": 4, "h": 4},
+      "targets": [{"expr": "kube_pod_container_status_restarts_total{namespace=\"realtime-monitoring\",pod=~\"postgres-.*\"}", "refId": "A"}],
+      "options": {"reduceOptions": {"values": False, "calcs": ["max"], "fields": ""}, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    },
+    {
+      "id": 26,
+      "type": "timeseries", "title": "Container CPU Usage by Service",
+      "gridPos": {"x": 0, "y": 64, "w": 12, "h": 7},
+      "targets": [{"expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"realtime-monitoring\"}[5m])) by (pod)", "legendFormat": "{{pod}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "decimals": 2}}
+    },
+    {
+      "id": 27,
+      "type": "timeseries", "title": "Container Memory Usage by Service",
+      "gridPos": {"x": 12, "y": 64, "w": 12, "h": 7},
+      "targets": [{"expr": "sum(container_memory_usage_bytes{namespace=\"realtime-monitoring\"}) by (pod) / 1024 / 1024", "legendFormat": "{{pod}} (MB)", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "bytes", "decimals": 2}}
+    }
+  
     }
